@@ -1,0 +1,7 @@
+node_modules/
+.wwebjs_auth/
+data/db.json
+data/*.tmp
+.env
+.vercel/
+.wwebjs_cache/

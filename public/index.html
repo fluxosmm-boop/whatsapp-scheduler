@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Disparador & Agendador Automático (Vercel)</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Sidebar Navigation -->
+  <aside>
+    <div class="logo-container">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 2C6.48 2 2 6.48 2 12c0 1.84.5 3.56 1.37 5.04L2 22l5.12-1.34C8.53 21.46 10.2 21.75 12 21.75c5.52 0 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/>
+        </svg>
+      </div>
+      <div class="logo-text">Scheduler Pro</div>
+    </div>
+
+    <ul class="nav-links">
+      <li class="nav-item active" onclick="switchView('dashboard')">
+        <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+        <span>Dashboard</span>
+      </li>
+      <li class="nav-item" onclick="switchView('settings')">
+        <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+        <span>API WhatsApp</span>
+      </li>
+      <li class="nav-item" onclick="switchView('channels')">
+        <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+        <span>Grupos e Canais</span>
+      </li>
+      <li class="nav-item" onclick="switchView('messages')">
+        <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+        <span>Mensagens</span>
+      </li>
+      <li class="nav-item" onclick="switchView('scheduler')">
+        <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+        <span>Agendamentos</span>
+      </li>
+      <li class="nav-item" onclick="switchView('logs')">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+        <span>Logs de Disparo</span>
+      </li>
+    </ul>
+  </aside>
+
+  <!-- Main View Area -->
+  <main>
+    <header>
+      <div class="header-title">
+        <h1 id="view-title">Dashboard</h1>
+        <p id="view-subtitle">Resumo estatístico do sistema e conexões.</p>
+      </div>
+      <div class="header-actions">
+        <div class="wa-badge" id="global-wa-badge">
+          <div class="dot"></div>
+          <span id="global-wa-status">WhatsApp Desconfigurado</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- SECTION: DASHBOARD -->
+    <section id="view-dashboard" class="view-section active">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-label">Agendamentos Ativos</span>
+            <div class="stat-icon">
+              <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+            </div>
+          </div>
+          <div class="stat-value" id="stat-active-scheds">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-label">Mensagens Enviadas</span>
+            <div class="stat-icon" style="color: var(--color-success)">
+              <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            </div>
+          </div>
+          <div class="stat-value" id="stat-sent-count">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-label">Taxa de Sucesso</span>
+            <div class="stat-icon" style="color: var(--color-secondary)">
+              <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+            </div>
+          </div>
+          <div class="stat-value" id="stat-success-rate">100%</div>
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
+        <!-- Live Console Logs -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <h3 class="panel-title">
+              <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-5 14H4v-4h11v4zm0-5H4V9h11v4zm5 5h-4V9h4v9z"/></svg>
+              Logs do Sistema (Tempo Real)
+            </h3>
+            <button class="btn btn-secondary" onclick="clearConsole()" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Limpar</button>
+          </div>
+          <div class="console-logs" id="console-logs-container">
+            <div class="console-line info"><span class="console-time">--:--:--</span> Sistema iniciado. Servidor Serverless pronto.</div>
+          </div>
+        </div>
+
+        <!-- System Summary / Next Runs -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <h3 class="panel-title">
+              <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>
+              Status de Configuração
+            </h3>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 0.5rem;">
+            <div class="list-item" style="padding: 1rem;">
+              <div class="list-item-content">
+                <span class="list-item-title">Configurações de API WhatsApp</span>
+                <span class="list-item-subtitle" id="wa-connection-detail">Verifique as chaves e rotas para envio automatizado.</span>
+              </div>
+              <button class="btn btn-primary" onclick="switchView('settings')" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Editar</button>
+            </div>
+            <div class="list-item" style="padding: 1rem;">
+              <div class="list-item-content">
+                <span class="list-item-title">Outros Canais</span>
+                <span class="list-item-subtitle">Telegram, Discord e Webhooks disparados direto da nuvem.</span>
+              </div>
+              <button class="btn btn-secondary" onclick="switchView('channels')" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Gerenciar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION: SETTINGS (API WHATSAPP) -->
+    <section id="view-settings" class="view-section">
+      <div class="panel-card" style="max-width: 650px; margin: 0 auto;">
+        <div class="panel-header">
+          <h3 class="panel-title">Configurações da API de WhatsApp</h3>
+          <span class="wa-badge" id="settings-status-badge">
+            <div class="dot"></div>
+            <span id="settings-status-text">Sem Configuração</span>
+          </span>
+        </div>
+        <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 2rem; line-height: 1.6;">
+          Insira abaixo a URL e o Token/API Key da sua API de WhatsApp externa. O agendador enviará uma requisição POST para este endpoint quando for o horário do disparo.
+        </p>
+
+        <form id="form-settings" onsubmit="saveSettingsForm(event)">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="settings-wa-url">URL de Disparo (POST)</label>
+              <input type="text" id="settings-wa-url" placeholder="Ex: https://api.seudominio.com/message/sendText/suainstancia" required>
+            </div>
+            <div class="form-group" style="margin-top: 0.5rem;">
+              <label for="settings-wa-token">Token da API (Bearer / Apikey / Token)</label>
+              <input type="text" id="settings-wa-token" placeholder="Insira o token ou senha de autenticação da sua API" required>
+            </div>
+            
+            <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end;">
+              <button type="submit" class="btn btn-primary" id="btn-save-settings">Salvar Configurações</button>
+            </div>
+          </div>
+        </form>
+
+        <div style="margin-top: 2rem; padding: 1.25rem; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 12px; font-size: 0.85rem; line-height: 1.5;">
+          <h4 style="font-weight: 700; margin-bottom: 0.5rem; color: #fff;">Compatibilidade Ampla de APIs:</h4>
+          O sistema envia no corpo do POST os seguintes campos automaticamente:
+          <code style="display: block; background: rgba(0,0,0,0.3); padding: 0.5rem; border-radius: 6px; margin: 0.5rem 0; font-family: monospace; color: #a5b4fc;">
+            {<br>
+            &nbsp;&nbsp;"chatId": "ID_DO_GRUPO_OU_NUMERO",<br>
+            &nbsp;&nbsp;"message": "TEXTO_DA_MENSAGEM"<br>
+            }
+          </code>
+          Isso garante suporte nativo a ferramentas populares como a **Evolution API**, **Z-API**, entre outras.
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION: GROUPS AND CHANNELS -->
+    <section id="view-channels" class="view-section">
+      <div class="flex-between" style="margin-bottom: 1.5rem;">
+        <h3 style="font-size: 1.25rem; font-weight: 700;">Destinos Configurados</h3>
+        <button class="btn btn-primary" onclick="openModal('modal-channel')">Novo Destino</button>
+      </div>
+
+      <div class="panel-card">
+        <div class="card-list" id="channels-list">
+          <!-- Dynamic Channel List -->
+          <div class="empty-state">
+            <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+            </svg>
+            <h3>Nenhum destino cadastrado</h3>
+            <p>Cadastre grupos do WhatsApp, canais de Telegram ou Webhooks do Discord.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION: MESSAGES -->
+    <section id="view-messages" class="view-section">
+      <div class="flex-between" style="margin-bottom: 1.5rem;">
+        <h3 style="font-size: 1.25rem; font-weight: 700;">Mensagens Salvas</h3>
+        <button class="btn btn-primary" onclick="openModal('modal-message')">Nova Mensagem</button>
+      </div>
+
+      <div class="panel-card">
+        <div class="card-list" id="messages-list">
+          <!-- Dynamic Message List -->
+          <div class="empty-state">
+            <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
+            </svg>
+            <h3>Nenhuma mensagem cadastrada</h3>
+            <p>Escreva os textos que serão disparados de forma agendada.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION: SCHEDULER -->
+    <section id="view-scheduler" class="view-section">
+      <div class="flex-between" style="margin-bottom: 1.5rem;">
+        <h3 style="font-size: 1.25rem; font-weight: 700;">Cronogramas Ativos</h3>
+        <button class="btn btn-primary" onclick="openModal('modal-scheduler')">Novo Agendamento</button>
+      </div>
+
+      <div class="panel-card">
+        <div class="card-list" id="schedulers-list">
+          <!-- Dynamic Schedulers List -->
+          <div class="empty-state">
+            <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z" />
+            </svg>
+            <h3>Nenhum agendamento ativo</h3>
+            <p>Vincule mensagens a canais com dias e horários programados.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION: LOGS -->
+    <section id="view-logs" class="view-section">
+      <div class="flex-between" style="margin-bottom: 1.5rem;">
+        <h3 style="font-size: 1.25rem; font-weight: 700;">Histórico de Envio</h3>
+        <button class="btn btn-secondary" onclick="clearAllLogs()">Limpar Histórico</button>
+      </div>
+
+      <div class="panel-card" style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Data/Hora</th>
+              <th>Destino</th>
+              <th>Mensagem</th>
+              <th>Status</th>
+              <th>Detalhes</th>
+            </tr>
+          </thead>
+          <tbody id="logs-table-body">
+            <!-- Dynamic Logs -->
+            <tr>
+              <td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 3rem;">
+                Nenhum log de disparo registrado.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL: ADD CHANNEL/GROUP -->
+  <div class="modal" id="modal-channel">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Novo Canal de Destino</h3>
+        <button class="close-modal" onclick="closeModal('modal-channel')">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <form id="form-channel" onsubmit="saveChannel(event)">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="channel-type">Tipo de Destino</label>
+            <select id="channel-type" onchange="toggleChannelInputs()" required>
+              <option value="whatsapp_group" selected>WhatsApp (Grupo / ID)</option>
+              <option value="telegram">Telegram (Bot / Canal)</option>
+              <option value="discord">Discord (Webhook)</option>
+              <option value="webhook">Webhook Personalizado (API)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="channel-name">Nome de Identificação (ex: Grupo de Avisos)</label>
+            <input type="text" id="channel-name" placeholder="Ex: Vendas Internas" required>
+          </div>
+
+          <!-- DYNAMIC FIELDS FOR CHANNEL TYPES -->
+          
+          <!-- WHATSAPP FIELDS -->
+          <div class="form-group type-specific-fields" id="fields-whatsapp">
+            <label for="channel-wa-id">ID do Grupo / Telefone do WhatsApp</label>
+            <input type="text" id="channel-wa-id" placeholder="Ex: 120363214859620@g.us ou 5511999999999" required>
+            <span style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">
+              Dica: Você encontra esse ID no painel da sua API externa de WhatsApp ou nas configurações da ferramenta.
+            </span>
+          </div>
+
+          <!-- TELEGRAM FIELDS -->
+          <div class="form-group type-specific-fields" id="fields-telegram" style="display:none;">
+            <label for="channel-tg-token">Token do Bot do Telegram</label>
+            <input type="text" id="channel-tg-token" placeholder="Ex: 123456:ABC-def1234...">
+            <label for="channel-tg-chatid" style="margin-top: 0.75rem;">Chat ID ou ID do Canal (ex: -100123456789)</label>
+            <input type="text" id="channel-tg-chatid" placeholder="Ex: -100156948572">
+          </div>
+
+          <!-- DISCORD FIELDS -->
+          <div class="form-group type-specific-fields" id="fields-discord" style="display:none;">
+            <label for="channel-dc-webhook">URL do Webhook do Discord</label>
+            <input type="text" id="channel-dc-webhook" placeholder="Ex: https://discord.com/api/webhooks/...">
+          </div>
+
+          <!-- WEBHOOK FIELDS -->
+          <div class="form-group type-specific-fields" id="fields-webhook" style="display:none;">
+            <label for="channel-webhook-url">URL da API</label>
+            <input type="text" id="channel-webhook-url" placeholder="Ex: https://api.suaempresa.com/v1/send">
+            <label for="channel-webhook-method" style="margin-top: 0.75rem;">Método HTTP</label>
+            <select id="channel-webhook-method">
+              <option value="POST">POST (Mais comum)</option>
+              <option value="GET">GET</option>
+            </select>
+          </div>
+
+          <div style="display: flex; gap: 1rem; margin-top: 1.5rem; justify-content: flex-end;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('modal-channel')">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Salvar Canal</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD MESSAGE -->
+  <div class="modal" id="modal-message">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Cadastrar Mensagem</h3>
+        <button class="close-modal" onclick="closeModal('modal-message')">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <form id="form-message" onsubmit="saveMessage(event)">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="message-title">Título / Atalho (Identificação interna)</label>
+            <input type="text" id="message-title" placeholder="Ex: Bom dia segunda-feira" required>
+          </div>
+          <div class="form-group">
+            <label for="message-body">Texto da Mensagem</label>
+            <textarea id="message-body" placeholder="Escreva a mensagem aqui... Use emojis e quebras de linha normalmente." required></textarea>
+          </div>
+          <div style="display: flex; gap: 1rem; margin-top: 1.5rem; justify-content: flex-end;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('modal-message')">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Salvar Mensagem</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD SCHEDULER -->
+  <div class="modal" id="modal-scheduler">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Novo Agendamento</h3>
+        <button class="close-modal" onclick="closeModal('modal-scheduler')">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <form id="form-scheduler" onsubmit="saveScheduler(event)">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="sched-message">Selecionar Mensagem</label>
+            <select id="sched-message" required>
+              <option value="">Selecione uma mensagem...</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>Destinos do Disparo (Selecione um ou mais)</label>
+            <div class="channels-select-grid" id="sched-channels-checkboxes">
+              <!-- Dynamically populated checkboxes -->
+              <span style="color: var(--text-secondary); font-size: 0.85rem; padding: 0.5rem;">
+                Cadastre um canal primeiro.
+              </span>
+            </div>
+          </div>
+
+          <div class="grid-cols-2">
+            <div class="form-group">
+              <label for="sched-time">Horário de Disparo</label>
+              <input type="time" id="sched-time" required>
+            </div>
+            <div class="form-group">
+              <label for="sched-active">Status</label>
+              <select id="sched-active">
+                <option value="true" selected>Ativo</option>
+                <option value="false">Pausado</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Dias da Semana</label>
+            <div class="weekdays-selector" id="sched-weekdays">
+              <span class="weekday-btn active" data-day="1">Seg</span>
+              <span class="weekday-btn active" data-day="2">Ter</span>
+              <span class="weekday-btn active" data-day="3">Qua</span>
+              <span class="weekday-btn active" data-day="4">Qui</span>
+              <span class="weekday-btn active" data-day="5">Sex</span>
+              <span class="weekday-btn active" data-day="6">Sáb</span>
+              <span class="weekday-btn active" data-day="0">Dom</span>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 1rem; margin-top: 1.5rem; justify-content: flex-end;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('modal-scheduler')">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Agendar</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
