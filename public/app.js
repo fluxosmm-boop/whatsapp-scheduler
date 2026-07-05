@@ -307,6 +307,10 @@ async function syncWhatsAppGroups() {
   try {
     const res = await fetch(`${API_URL}/api/whatsapp/sync-groups`, { method: 'POST' });
     const data = await res.json();
+    if (!res.ok) {
+      alert('Erro ao sincronizar: ' + (data.message || 'Erro desconhecido no servidor.'));
+      return;
+    }
     alert(`${data.count} grupos do WhatsApp carregados e sincronizados!`);
     loadChannels();
   } catch (err) {
