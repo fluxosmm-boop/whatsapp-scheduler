@@ -296,10 +296,13 @@
           
           <!-- WHATSAPP FIELDS -->
           <div class="form-group type-specific-fields" id="fields-whatsapp">
-            <label for="channel-wa-id">ID do Grupo do WhatsApp (se souber, ou selecione sincronizar grupos)</label>
+            <label for="channel-wa-invite">Link de Convite do Grupo (Recomendado)</label>
+            <input type="text" id="channel-wa-invite" placeholder="Ex: https://chat.whatsapp.com/G1xY...">
+            
+            <label for="channel-wa-id" style="margin-top: 0.75rem;">Ou ID do Grupo (se souber)</label>
             <input type="text" id="channel-wa-id" placeholder="Ex: 120363214859620@g.us">
             <span style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">
-              Dica: Deixe em branco se preferir conectar o WhatsApp e usar o botão "Sincronizar Grupos" para carregar automaticamente.
+              Dica: Cole o link de convite do grupo e o sistema descobrirá o ID automaticamente!
             </span>
           </div>
 

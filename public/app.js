@@ -388,6 +388,7 @@ async function saveChannel(event) {
   
   if (type === 'whatsapp_group') {
     payload.chatId = document.getElementById('channel-wa-id').value;
+    payload.inviteLink = document.getElementById('channel-wa-invite').value;
   } else if (type === 'telegram') {
     payload.botToken = document.getElementById('channel-tg-token').value;
     payload.chatId = document.getElementById('channel-tg-chatid').value;
