@@ -34,7 +34,7 @@ function switchView(viewName) {
   // Update header titles
   const titles = {
     dashboard: { title: 'Dashboard', sub: 'Resumo estatístico do sistema e conexões.' },
-    settings: { title: 'Configurações de API WhatsApp', sub: 'Gerencie as chaves e rotas da sua API externa de WhatsApp.' },
+    whatsapp: { title: 'WhatsApp Web', sub: 'Conecte seu celular para habilitar envios automatizados.' },
     channels: { title: 'Grupos e Canais', sub: 'Gerencie os canais de destino de suas mensagens.' },
     messages: { title: 'Mensagens Cadastradas', sub: 'Modelos de textos para os disparos automáticos.' },
     scheduler: { title: 'Cronograma de Envio', sub: 'Configure horários e dias específicos para seus disparos.' },
@@ -49,8 +49,6 @@ function switchView(viewName) {
   // Load specific data on tab change
   if (viewName === 'dashboard') {
     loadDashboardStats();
-  } else if (viewName === 'settings') {
-    loadSettings();
   } else if (viewName === 'channels') {
     loadChannels();
   } else if (viewName === 'messages') {
@@ -83,16 +81,12 @@ function toggleChannelInputs() {
   
   if (type === 'whatsapp_group') {
     document.getElementById('fields-whatsapp').style.display = 'block';
-    document.getElementById('channel-wa-id').required = true;
   } else if (type === 'telegram') {
     document.getElementById('fields-telegram').style.display = 'block';
-    document.getElementById('channel-wa-id').required = false;
   } else if (type === 'discord') {
     document.getElementById('fields-discord').style.display = 'block';
-    document.getElementById('channel-wa-id').required = false;
   } else if (type === 'webhook') {
     document.getElementById('fields-webhook').style.display = 'block';
-    document.getElementById('channel-wa-id').required = false;
   }
 }
 
@@ -142,98 +136,185 @@ function updateWhatsAppBadge(status) {
   const badgeGlobal = document.getElementById('global-wa-badge');
   const textGlobal = document.getElementById('global-wa-status');
   
-  const badgeLocal = document.getElementById('settings-status-badge');
-  const textLocal = document.getElementById('settings-status-text');
+  const badgeLocal = document.getElementById('wa-status-badge');
+  const textLocal = document.getElementById('wa-status-text');
   
-  let label = 'WhatsApp Sem API';
+  const syncBtn = document.getElementById('btn-sync-wa-groups');
+  
+  let label = 'WhatsApp Desconectado';
   let isConnected = false;
   
   if (status === 'connected') {
-    label = 'WhatsApp API Ativa';
+    label = 'WhatsApp Conectado';
     isConnected = true;
+    if (syncBtn) syncBtn.style.display = 'block';
+    
+    document.getElementById('btn-connect-wa').style.display = 'none';
+    document.getElementById('btn-disconnect-wa').style.display = 'block';
+    
+    document.getElementById('qr-status-main').innerText = 'WhatsApp Conectado!';
+    document.getElementById('qr-instructions-text').innerText = 'Seu celular está pareado. O sistema está pronto para disparos automáticos.';
+    document.getElementById('qr-code-img').style.display = 'none';
+    document.getElementById('qr-placeholder-icon').style.display = 'block';
+    document.getElementById('qr-placeholder-icon').style.color = 'var(--color-success)';
+  } else if (status === 'connecting') {
+    label = 'WhatsApp Conectando...';
+    if (syncBtn) syncBtn.style.display = 'none';
+    
+    document.getElementById('btn-connect-wa').style.display = 'none';
+    document.getElementById('btn-disconnect-wa').style.display = 'none';
+    
+    document.getElementById('qr-status-main').innerText = 'Conectando ao WhatsApp Web...';
+    document.getElementById('qr-instructions-text').innerText = 'Iniciando navegador em segundo plano. Aguarde...';
   } else {
-    label = 'WhatsApp API Inativa';
-    isConnected = false;
+    label = 'WhatsApp Desconectado';
+    if (syncBtn) syncBtn.style.display = 'none';
+    
+    document.getElementById('btn-connect-wa').style.display = 'block';
+    document.getElementById('btn-disconnect-wa').style.display = 'none';
+    
+    document.getElementById('qr-placeholder-icon').style.color = 'var(--color-primary)';
   }
   
   // Set badge classes
   if (isConnected) {
     badgeGlobal.classList.add('connected');
-    badgeGlobal.style.backgroundColor = 'rgba(16, 185, 129, 0.1)';
-    badgeGlobal.style.color = 'var(--color-success)';
-    badgeGlobal.style.borderColor = 'rgba(16, 185, 129, 0.2)';
     textGlobal.innerText = label;
     
     if (badgeLocal) {
       badgeLocal.classList.add('connected');
-      badgeLocal.style.backgroundColor = 'rgba(16, 185, 129, 0.1)';
-      badgeLocal.style.color = 'var(--color-success)';
-      badgeLocal.style.borderColor = 'rgba(16, 185, 129, 0.2)';
       textLocal.innerText = label;
     }
   } else {
     badgeGlobal.classList.remove('connected');
-    badgeGlobal.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
-    badgeGlobal.style.color = 'var(--color-danger)';
-    badgeGlobal.style.borderColor = 'rgba(239, 68, 68, 0.2)';
     textGlobal.innerText = label;
     
     if (badgeLocal) {
       badgeLocal.classList.remove('connected');
-      badgeLocal.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
-      badgeLocal.style.color = 'var(--color-danger)';
-      badgeLocal.style.borderColor = 'rgba(239, 68, 68, 0.2)';
       textLocal.innerText = label;
     }
   }
 }
 
-// 2. Settings Management (API WhatsApp Externa)
-async function loadSettings() {
+// 2. WhatsApp Client Management
+async function initializeWhatsAppClient() {
+  const spinner = document.getElementById('qr-spinner');
+  const placeholder = document.getElementById('qr-placeholder-icon');
+  const qrImg = document.getElementById('qr-code-img');
+  const connectBtn = document.getElementById('btn-connect-wa');
+  
+  spinner.style.display = 'block';
+  placeholder.style.display = 'none';
+  qrImg.style.display = 'none';
+  connectBtn.disabled = true;
+  
+  document.getElementById('qr-status-main').innerText = 'Iniciando cliente...';
+  document.getElementById('qr-instructions-text').innerText = 'Isso pode demorar de 10 a 20 segundos...';
+  
   try {
-    const res = await fetch(`${API_URL}/api/settings`);
-    const settings = await res.json();
+    const res = await fetch(`${API_URL}/api/whatsapp/connect`, { method: 'POST' });
+    const data = await res.json();
+    console.log('Inicialização do WhatsApp solicitada:', data);
     
-    document.getElementById('settings-wa-url').value = settings.waApiUrl || '';
-    document.getElementById('settings-wa-token').value = settings.waApiToken || '';
-    
-    const waStatus = (settings.waApiUrl && settings.waApiToken) ? 'connected' : 'disconnected';
-    updateWhatsAppBadge(waStatus);
+    startQRPolling();
   } catch (err) {
-    console.error('Erro ao buscar configurações', err);
+    console.error('Erro ao conectar WhatsApp', err);
+    spinner.style.display = 'none';
+    placeholder.style.display = 'block';
+    connectBtn.disabled = false;
+    document.getElementById('qr-status-main').innerText = 'Erro ao inicializar';
+    document.getElementById('qr-instructions-text').innerText = 'Não foi possível iniciar a automação. Verifique os logs do servidor.';
   }
 }
 
-async function saveSettingsForm(event) {
-  event.preventDefault();
-  
-  const waApiUrl = document.getElementById('settings-wa-url').value;
-  const waApiToken = document.getElementById('settings-wa-token').value;
-  const saveBtn = document.getElementById('btn-save-settings');
-  
-  saveBtn.disabled = true;
-  saveBtn.innerText = 'Salvando...';
+async function disconnectWhatsAppClient() {
+  if (!confirm('Tem certeza que deseja desconectar sua conta do WhatsApp?')) return;
   
   try {
-    const res = await fetch(`${API_URL}/api/settings`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ waApiUrl, waApiToken })
-    });
+    const res = await fetch(`${API_URL}/api/whatsapp/disconnect`, { method: 'POST' });
+    const data = await res.json();
+    console.log('WhatsApp desconectado:', data);
+    updateWhatsAppBadge('disconnected');
     
-    if (res.ok) {
-      const data = await res.json();
-      alert('Configurações salvas com sucesso!');
-      loadSettings();
-    } else {
-      alert('Erro ao salvar as configurações.');
-    }
+    document.getElementById('qr-code-img').style.display = 'none';
+    document.getElementById('qr-placeholder-icon').style.display = 'block';
+    document.getElementById('qr-status-main').innerText = 'Desconectado com sucesso';
+    document.getElementById('qr-instructions-text').innerText = 'Clique em Gerar QR Code para conectar novamente.';
   } catch (err) {
-    console.error(err);
-    alert('Erro de conexão ao salvar.');
+    console.error('Erro ao desconectar WhatsApp', err);
+  }
+}
+
+// Poll WhatsApp status and QR Code from backend
+let qrPollInterval = null;
+function startQRPolling() {
+  if (qrPollInterval) clearInterval(qrPollInterval);
+  
+  qrPollInterval = setInterval(async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/whatsapp/status`);
+      const data = await res.json();
+      
+      updateWhatsAppBadge(data.status);
+      
+      const spinner = document.getElementById('qr-spinner');
+      const placeholder = document.getElementById('qr-placeholder-icon');
+      const qrImg = document.getElementById('qr-code-img');
+      const connectBtn = document.getElementById('btn-connect-wa');
+      
+      if (data.status === 'connected') {
+        clearInterval(qrPollInterval);
+        spinner.style.display = 'none';
+        connectBtn.disabled = false;
+        loadDashboardStats();
+      } else if (data.status === 'qr_ready' && data.qrCodeDataUrl) {
+        spinner.style.display = 'none';
+        placeholder.style.display = 'none';
+        qrImg.src = data.qrCodeDataUrl;
+        qrImg.style.display = 'block';
+        connectBtn.disabled = false;
+        
+        document.getElementById('qr-status-main').innerText = 'Escaneie o QR Code';
+        document.getElementById('qr-instructions-text').innerText = 'Abra o WhatsApp no celular > Dispositivos conectados > Conectar dispositivo e aponte a câmera.';
+      } else if (data.status === 'connecting') {
+        spinner.style.display = 'block';
+        placeholder.style.display = 'none';
+        qrImg.style.display = 'none';
+      } else if (data.status === 'disconnected') {
+        clearInterval(qrPollInterval);
+        spinner.style.display = 'none';
+        placeholder.style.display = 'block';
+        qrImg.style.display = 'none';
+        connectBtn.disabled = false;
+        
+        document.getElementById('qr-status-main').innerText = 'Conexão cancelada ou encerrada';
+        document.getElementById('qr-instructions-text').innerText = 'Abra o WhatsApp no celular e tente parear de novo.';
+      }
+    } catch (err) {
+      console.error('Erro no polling do WhatsApp:', err);
+    }
+  }, 2000);
+}
+
+// Sync WhatsApp Groups from linked phone
+async function syncWhatsAppGroups() {
+  const syncBtn = document.getElementById('btn-sync-wa-groups');
+  const originalText = syncBtn.innerText;
+  
+  syncBtn.disabled = true;
+  syncBtn.innerText = 'Sincronizando...';
+  
+  try {
+    const res = await fetch(`${API_URL}/api/whatsapp/sync-groups`, { method: 'POST' });
+    const data = await res.json();
+    alert(`${data.count} grupos do WhatsApp carregados e sincronizados!`);
+    loadChannels();
+  } catch (err) {
+    console.error('Erro ao sincronizar grupos:', err);
+    alert('Erro ao sincronizar grupos. Verifique os logs.');
   } finally {
-    saveBtn.disabled = false;
-    saveBtn.innerText = 'Salvar Configurações';
+    syncBtn.disabled = false;
+    syncBtn.innerText = originalText;
   }
 }
 
@@ -269,7 +350,7 @@ async function loadChannels() {
       item.className = 'list-item';
       
       let details = '';
-      if (ch.type === 'whatsapp_group') details = `Chat ID: ${ch.chatId}`;
+      if (ch.type === 'whatsapp_group') details = ch.chatId;
       else if (ch.type === 'telegram') details = `Chat ID: ${ch.chatId}`;
       else if (ch.type === 'discord') details = 'Webhook URL configurada';
       else if (ch.type === 'webhook') details = `${ch.method} ${ch.url}`;
@@ -453,7 +534,7 @@ function populateSchedulerDropdowns() {
   const checkGrid = document.getElementById('sched-channels-checkboxes');
   checkGrid.innerHTML = '';
   if (channels.length === 0) {
-    checkGrid.innerHTML = '<span style="color: var(--text-secondary); font-size: 0.85rem; padding: 0.5rem;">Cadastre um canal primeiro.</span>';
+    checkGrid.innerHTML = '<span style="color: var(--text-secondary); font-size: 0.85rem; padding: 0.5rem;">Cadastre ou conecte um canal primeiro.</span>';
     return;
   }
   
@@ -705,13 +786,18 @@ function escapeHTML(str) {
 window.addEventListener('DOMContentLoaded', () => {
   switchView('dashboard');
   
-  // Start polling system log events
+  fetch(`${API_URL}/api/whatsapp/status`)
+    .then(res => res.json())
+    .then(data => {
+      updateWhatsAppBadge(data.status);
+      if (data.status === 'connecting' || data.status === 'qr_ready') {
+        startQRPolling();
+      }
+    });
+    
   startConsolePolling();
-  
-  // Pull dashboard stats
   loadDashboardStats();
   
-  // Poll statistics periodically
   setInterval(() => {
     if (currentView === 'dashboard') {
       loadDashboardStats();

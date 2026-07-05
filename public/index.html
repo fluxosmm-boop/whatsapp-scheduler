@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Disparador & Agendador Automático (Vercel)</title>
+  <title>Disparador & Agendador Automático (Railway)</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -24,9 +24,9 @@
         <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
         <span>Dashboard</span>
       </li>
-      <li class="nav-item" onclick="switchView('settings')">
-        <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-        <span>API WhatsApp</span>
+      <li class="nav-item" onclick="switchView('whatsapp')">
+        <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg>
+        <span>Conectar WhatsApp</span>
       </li>
       <li class="nav-item" onclick="switchView('channels')">
         <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
@@ -57,7 +57,7 @@
       <div class="header-actions">
         <div class="wa-badge" id="global-wa-badge">
           <div class="dot"></div>
-          <span id="global-wa-status">WhatsApp Desconfigurado</span>
+          <span id="global-wa-status">WhatsApp Desconectado</span>
         </div>
       </div>
     </header>
@@ -105,7 +105,7 @@
             <button class="btn btn-secondary" onclick="clearConsole()" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Limpar</button>
           </div>
           <div class="console-logs" id="console-logs-container">
-            <div class="console-line info"><span class="console-time">--:--:--</span> Sistema iniciado. Servidor Serverless pronto.</div>
+            <div class="console-line info"><span class="console-time">--:--:--</span> Sistema iniciado. Aguardando eventos...</div>
           </div>
         </div>
 
@@ -114,70 +114,58 @@
           <div class="panel-header">
             <h3 class="panel-title">
               <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>
-              Status de Configuração
+              Status de Integração
             </h3>
           </div>
           <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 0.5rem;">
             <div class="list-item" style="padding: 1rem;">
               <div class="list-item-content">
-                <span class="list-item-title">Configurações de API WhatsApp</span>
-                <span class="list-item-subtitle" id="wa-connection-detail">Verifique as chaves e rotas para envio automatizado.</span>
+                <span class="list-item-title">Status do WhatsApp</span>
+                <span class="list-item-subtitle" id="wa-connection-detail">Desconectado. Escaneie o QR code para habilitar disparos.</span>
               </div>
-              <button class="btn btn-primary" onclick="switchView('settings')" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Editar</button>
+              <button class="btn btn-primary" onclick="switchView('whatsapp')" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Gerenciar</button>
             </div>
             <div class="list-item" style="padding: 1rem;">
               <div class="list-item-content">
-                <span class="list-item-title">Outros Canais</span>
-                <span class="list-item-subtitle">Telegram, Discord e Webhooks disparados direto da nuvem.</span>
+                <span class="list-item-title">Telegram / Discord</span>
+                <span class="list-item-subtitle">Prontos para envio via requisições HTTP API padrão.</span>
               </div>
-              <button class="btn btn-secondary" onclick="switchView('channels')" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Gerenciar</button>
+              <button class="btn btn-secondary" onclick="switchView('channels')" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Configurar</button>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- SECTION: SETTINGS (API WHATSAPP) -->
-    <section id="view-settings" class="view-section">
-      <div class="panel-card" style="max-width: 650px; margin: 0 auto;">
+    <!-- SECTION: WHATSAPP -->
+    <section id="view-whatsapp" class="view-section">
+      <div class="panel-card" style="max-width: 600px; margin: 0 auto;">
         <div class="panel-header">
-          <h3 class="panel-title">Configurações da API de WhatsApp</h3>
-          <span class="wa-badge" id="settings-status-badge">
+          <h3 class="panel-title">Conectar WhatsApp Web</h3>
+          <span class="wa-badge" id="wa-status-badge">
             <div class="dot"></div>
-            <span id="settings-status-text">Sem Configuração</span>
+            <span id="wa-status-text">Desconectado</span>
           </span>
         </div>
         <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 2rem; line-height: 1.6;">
-          Insira abaixo a URL e o Token/API Key da sua API de WhatsApp externa. O agendador enviará uma requisição POST para este endpoint quando for o horário do disparo.
+          Para enviar mensagens automáticas para seus contatos e grupos, você deve vincular seu WhatsApp escaneando o QR Code abaixo. Esse processo funciona de forma idêntica ao WhatsApp Web e salva a sessão no servidor.
         </p>
 
-        <form id="form-settings" onsubmit="saveSettingsForm(event)">
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="settings-wa-url">URL de Disparo (POST)</label>
-              <input type="text" id="settings-wa-url" placeholder="Ex: https://api.seudominio.com/message/sendText/suainstancia" required>
-            </div>
-            <div class="form-group" style="margin-top: 0.5rem;">
-              <label for="settings-wa-token">Token da API (Bearer / Apikey / Token)</label>
-              <input type="text" id="settings-wa-token" placeholder="Insira o token ou senha de autenticação da sua API" required>
-            </div>
-            
-            <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end;">
-              <button type="submit" class="btn btn-primary" id="btn-save-settings">Salvar Configurações</button>
-            </div>
-          </div>
-        </form>
+        <div class="qr-container" id="qr-section-container">
+          <div class="spinner" id="qr-spinner" style="display:none;"></div>
+          <svg class="qr-placeholder-icon" id="qr-placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 3.75 9.375v-4.5ZM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5ZM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 13.5 9.375v-4.5Z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21h-3a.75.75 0 0 1-.75-.75V18a.75.75 0 0 0-.75-.75h-.75a.75.75 0 0 1-.75-.75v-3a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75v3a.75.75 0 0 0 .75.75h.75a.75.75 0 0 1 .75.75v3a.75.75 0 0 1-.75.75Z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14.25 21a.75.75 0 0 1-.75-.75v-3.75a.75.75 0 0 1 .75-.75h3.75a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-.75.75h-3.75Z" />
+          </svg>
+          <img class="qr-code-img" id="qr-code-img" style="display:none;" alt="QR Code WhatsApp">
+          <h4 class="qr-status-text" id="qr-status-main">WhatsApp pronto para conexão</h4>
+          <p class="qr-instructions" id="qr-instructions-text">Clique no botão abaixo para gerar o QR code de autenticação.</p>
+        </div>
 
-        <div style="margin-top: 2rem; padding: 1.25rem; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 12px; font-size: 0.85rem; line-height: 1.5;">
-          <h4 style="font-weight: 700; margin-bottom: 0.5rem; color: #fff;">Compatibilidade Ampla de APIs:</h4>
-          O sistema envia no corpo do POST os seguintes campos automaticamente:
-          <code style="display: block; background: rgba(0,0,0,0.3); padding: 0.5rem; border-radius: 6px; margin: 0.5rem 0; font-family: monospace; color: #a5b4fc;">
-            {<br>
-            &nbsp;&nbsp;"chatId": "ID_DO_GRUPO_OU_NUMERO",<br>
-            &nbsp;&nbsp;"message": "TEXTO_DA_MENSAGEM"<br>
-            }
-          </code>
-          Isso garante suporte nativo a ferramentas populares como a **Evolution API**, **Z-API**, entre outras.
+        <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 2rem;">
+          <button class="btn btn-primary" id="btn-connect-wa" onclick="initializeWhatsAppClient()">Gerar QR Code</button>
+          <button class="btn btn-danger" id="btn-disconnect-wa" onclick="disconnectWhatsAppClient()" style="display:none;">Desconectar Conta</button>
         </div>
       </div>
     </section>
@@ -186,7 +174,10 @@
     <section id="view-channels" class="view-section">
       <div class="flex-between" style="margin-bottom: 1.5rem;">
         <h3 style="font-size: 1.25rem; font-weight: 700;">Destinos Configurados</h3>
-        <button class="btn btn-primary" onclick="openModal('modal-channel')">Novo Destino</button>
+        <div style="display: flex; gap: 1rem;">
+          <button class="btn btn-secondary" onclick="syncWhatsAppGroups()" id="btn-sync-wa-groups" style="display:none;">Sincronizar Grupos WhatsApp</button>
+          <button class="btn btn-primary" onclick="openModal('modal-channel')">Novo Destino</button>
+        </div>
       </div>
 
       <div class="panel-card">
@@ -290,7 +281,7 @@
           <div class="form-group">
             <label for="channel-type">Tipo de Destino</label>
             <select id="channel-type" onchange="toggleChannelInputs()" required>
-              <option value="whatsapp_group" selected>WhatsApp (Grupo / ID)</option>
+              <option value="whatsapp_group" selected>WhatsApp (Grupo) - Requer WhatsApp Conectado</option>
               <option value="telegram">Telegram (Bot / Canal)</option>
               <option value="discord">Discord (Webhook)</option>
               <option value="webhook">Webhook Personalizado (API)</option>
@@ -305,10 +296,10 @@
           
           <!-- WHATSAPP FIELDS -->
           <div class="form-group type-specific-fields" id="fields-whatsapp">
-            <label for="channel-wa-id">ID do Grupo / Telefone do WhatsApp</label>
-            <input type="text" id="channel-wa-id" placeholder="Ex: 120363214859620@g.us ou 5511999999999" required>
+            <label for="channel-wa-id">ID do Grupo do WhatsApp (se souber, ou selecione sincronizar grupos)</label>
+            <input type="text" id="channel-wa-id" placeholder="Ex: 120363214859620@g.us">
             <span style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">
-              Dica: Você encontra esse ID no painel da sua API externa de WhatsApp ou nas configurações da ferramenta.
+              Dica: Deixe em branco se preferir conectar o WhatsApp e usar o botão "Sincronizar Grupos" para carregar automaticamente.
             </span>
           </div>
 
@@ -397,7 +388,7 @@
             <div class="channels-select-grid" id="sched-channels-checkboxes">
               <!-- Dynamically populated checkboxes -->
               <span style="color: var(--text-secondary); font-size: 0.85rem; padding: 0.5rem;">
-                Cadastre um canal primeiro.
+                Cadastre ou conecte um canal primeiro.
               </span>
             </div>
           </div>

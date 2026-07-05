@@ -1,16 +1,16 @@
 {
-  "name": "message-scheduler-vercel",
+  "name": "message-scheduler",
   "version": "1.0.0",
-  "description": "WhatsApp and Webhook Message Scheduler Dashboard for Vercel",
-  "main": "api/index.js",
+  "description": "WhatsApp and Webhook Message Scheduler Dashboard for Railway",
+  "main": "server.js",
   "scripts": {
-    "start": "node api/index.js",
-    "vercel-build": "echo 'No build step required'"
+    "start": "node server.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.21.2",
-    "mongodb": "^6.3.0",
-    "node-cron": "^3.0.3"
+    "node-cron": "^3.0.3",
+    "qrcode": "^1.5.4",
+    "whatsapp-web.js": "^1.26.0"
   }
 }
