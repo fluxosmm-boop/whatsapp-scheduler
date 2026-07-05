@@ -2,15 +2,16 @@ const dbHelper = require('./db');
 
 // Main Cron Trigger Endpoint (Serverless Function)
 module.exports = async function handler(req, res) {
-  // Authorization check (optional, but recommended for Vercel Cron protection)
-  // Vercel sends an Authorization: Bearer <CRON_SECRET> header
-  const authHeader = req.headers.authorization;
-  const isVercelCron = authHeader && authHeader.startsWith('Bearer ');
-  const isLocalTrigger = !process.env.MONGODB_URI; // Local development bypasses auth
-
-  if (process.env.VERCEL && !isVercelCron) {
-    dbHelper.logSystem('Acesso negado ao Cron: Requisição não autorizada pela Vercel.', 'warning');
-    return res.status(401).json({ error: 'Unauthorized' });
+  // Security check: If CRON_SECRET is defined in environment variables, validate it
+  const cronSecret = process.env.CRON_SECRET;
+  if (cronSecret) {
+    const authHeader = req.headers.authorization;
+    const incomingToken = authHeader ? authHeader.replace('Bearer ', '') : req.query.secret;
+    
+    if (incomingToken !== cronSecret) {
+      dbHelper.logSystem('Acesso negado ao Cron: Token inválido.', 'warning');
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
   }
 
   const now = new Date();
