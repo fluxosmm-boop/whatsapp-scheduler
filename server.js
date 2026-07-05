@@ -76,7 +76,7 @@ function initWhatsApp(auto = false) {
 
   client = new Client({
     authStrategy: new LocalAuth({
-      dataPath: path.join(__dirname, '.wwebjs_auth')
+      dataPath: path.join(__dirname, 'data', '.wwebjs_auth')
     }),
     puppeteer: {
       headless: true,
