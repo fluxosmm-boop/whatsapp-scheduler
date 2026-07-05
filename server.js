@@ -84,7 +84,7 @@ function initWhatsApp(auto = false) {
     },
     puppeteer: {
       headless: true,
-      protocolTimeout: 180000, // 3 minutes timeout
+      protocolTimeout: 300000, // 5 minutes timeout
       executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
       args: [
         '--no-sandbox',
@@ -95,6 +95,7 @@ function initWhatsApp(auto = false) {
         '--single-process',
         '--disable-extensions',
         '--disable-default-apps',
+        '--js-flags="--max-old-space-size=256"', // Limits Chrome JS memory to 256MB to fit free tier container
         '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
       ]
     }
@@ -139,7 +140,7 @@ function initWhatsApp(auto = false) {
 }
 
 // Auto init WhatsApp if there's a saved session
-const authDir = path.join(__dirname, '.wwebjs_auth');
+const authDir = path.join(__dirname, 'data', '.wwebjs_auth');
 if (fs.existsSync(authDir)) {
   logSystem('Sessão do WhatsApp salva detectada. Iniciando conexão automática...', 'info');
   initWhatsApp(true);
@@ -194,21 +195,30 @@ app.post('/api/whatsapp/sync-groups', async (req, res) => {
   }
 
   try {
-    logSystem('Buscando conversas do WhatsApp...', 'info');
-    const chats = await client.getChats();
-    const groups = chats.filter(chat => chat.isGroup);
+    logSystem('Buscando grupos do WhatsApp com otimização de memória...', 'info');
+    
+    // Custom lightweight evaluation to get only group JID and name directly from WhatsApp Web memory store
+    const groups = await client.pupPage.evaluate(() => {
+      if (!window.Store || !window.Store.Chat) return [];
+      return window.Store.Chat.models
+        .filter(chat => chat.isGroup)
+        .map(chat => ({
+          id: chat.id._serialized,
+          name: chat.name || 'Grupo Sem Nome'
+        }));
+    });
 
     const db = readDB();
     let count = 0;
 
     groups.forEach(group => {
-      const exists = db.channels.find(c => c.chatId === group.id._serialized);
+      const exists = db.channels.find(c => c.chatId === group.id);
       if (!exists) {
         db.channels.push({
           id: 'ch_' + Math.random().toString(36).substr(2, 9),
           type: 'whatsapp_group',
-          name: group.name || 'Grupo Sem Nome',
-          chatId: group.id._serialized
+          name: group.name,
+          chatId: group.id
         });
         count++;
       }
@@ -249,12 +259,44 @@ app.get('/api/channels', (req, res) => {
   res.json(db.channels);
 });
 
-app.post('/api/channels', (req, res) => {
+app.post('/api/channels', async (req, res) => {
   const db = readDB();
   const newChannel = {
     id: 'ch_' + Math.random().toString(36).substr(2, 9),
     ...req.body
   };
+
+  // Resolve WhatsApp Group ID via Invite Link if provided
+  if (newChannel.type === 'whatsapp_group' && newChannel.inviteLink) {
+    try {
+      if (waStatus !== 'connected' || !client) {
+        return res.status(400).json({ message: 'WhatsApp não está conectado para ler o link de convite.' });
+      }
+      
+      const inviteUrl = newChannel.inviteLink;
+      const match = inviteUrl.match(/(?:chat\.whatsapp\.com\/)(?:invite\/)?([a-zA-Z0-9]{22,24})/);
+      if (!match) {
+        return res.status(400).json({ message: 'Link de convite do WhatsApp inválido.' });
+      }
+      
+      const inviteCode = match[1];
+      logSystem(`Obtendo informações do convite do WhatsApp: ${inviteCode}`, 'info');
+      
+      const inviteInfo = await client.getInviteInfo(inviteCode);
+      newChannel.chatId = inviteInfo.id._serialized;
+      if (!newChannel.name) {
+        newChannel.name = inviteInfo.subject || 'Grupo WhatsApp via Convite';
+      }
+      
+      logSystem(`Grupo resolvido com sucesso via convite: ${newChannel.name} (${newChannel.chatId})`, 'success');
+    } catch (err) {
+      logSystem(`Erro ao processar link de convite: ${err.message}`, 'error');
+      return res.status(400).json({ message: `Erro ao obter ID do grupo via link: ${err.message}` });
+    }
+  }
+
+  delete newChannel.inviteLink; // Clean up payload
+
   db.channels.push(newChannel);
   writeDB(db);
   logSystem(`Destino adicionado: ${newChannel.name} (${newChannel.type})`, 'info');
