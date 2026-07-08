@@ -63,6 +63,7 @@ function writeDB(data) {
 let client = null;
 let waStatus = 'disconnected'; 
 let latestQR = null;
+let cachedGroups = []; // In-memory cache of WhatsApp groups
 
 // Initialize WhatsApp client
 function initWhatsApp(auto = false) {
@@ -105,10 +106,24 @@ function initWhatsApp(auto = false) {
     logSystem('QR Code gerado. Pronto para escanear no Dashboard.', 'info');
   });
 
-  client.on('ready', () => {
+  client.on('ready', async () => {
     waStatus = 'connected';
     latestQR = null;
     logSystem('Conexão com o WhatsApp estabelecida com sucesso!', 'success');
+    
+    // Proactively load and cache groups in background (non-blocking)
+    setTimeout(async () => {
+      try {
+        logSystem('Carregando grupos do WhatsApp em cache...', 'info');
+        const chats = await client.getChats();
+        cachedGroups = chats
+          .filter(chat => chat.isGroup)
+          .map(chat => ({ id: chat.id._serialized, name: chat.name || 'Grupo Sem Nome' }));
+        logSystem(`${cachedGroups.length} grupos carregados no cache com sucesso!`, 'success');
+      } catch (err) {
+        logSystem(`Aviso: não foi possível pré-carregar grupos: ${err.message}`, 'warning');
+      }
+    }, 5000); // Wait 5s after connect for WhatsApp to fully load
   });
 
   client.on('authenticated', () => {
@@ -193,36 +208,30 @@ app.post('/api/whatsapp/sync-groups', async (req, res) => {
   }
 
   try {
-    logSystem('Buscando grupos do WhatsApp...', 'info');
-
-    // Wait for WhatsApp Web to fully load chats into memory, then extract groups
-    const groups = await client.pupPage.evaluate(async () => {
-      // Wait up to 20s for Store.Chat to be populated
-      let attempts = 0;
-      while (attempts < 40) {
-        if (window.Store && window.Store.Chat && window.Store.Chat.models && window.Store.Chat.models.length > 0) {
-          break;
-        }
-        await new Promise(r => setTimeout(r, 500));
-        attempts++;
+    // If cache is empty, try to load now (blocking, with 60s timeout)
+    if (cachedGroups.length === 0) {
+      logSystem('Cache vazio. Buscando grupos agora (pode levar até 60s)...', 'info');
+      try {
+        const chats = await Promise.race([
+          client.getChats(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout de 60s ao buscar grupos')), 60000))
+        ]);
+        cachedGroups = chats
+          .filter(chat => chat.isGroup)
+          .map(chat => ({ id: chat.id._serialized, name: chat.name || 'Grupo Sem Nome' }));
+        logSystem(`${cachedGroups.length} grupos carregados no cache.`, 'info');
+      } catch (fetchErr) {
+        logSystem(`Erro ao buscar grupos: ${fetchErr.message}`, 'error');
+        return res.status(500).json({ message: fetchErr.message });
       }
+    }
 
-      if (!window.Store || !window.Store.Chat || !window.Store.Chat.models) return [];
-
-      return window.Store.Chat.models
-        .filter(chat => chat.isGroup)
-        .map(chat => ({
-          id: chat.id._serialized,
-          name: chat.name || chat.formattedTitle || 'Grupo Sem Nome'
-        }));
-    });
-
-    logSystem(`${groups.length} grupos encontrados no WhatsApp.`, 'info');
+    logSystem(`Sincronizando ${cachedGroups.length} grupos do cache...`, 'info');
 
     const db = readDB();
     let count = 0;
 
-    groups.forEach(group => {
+    cachedGroups.forEach(group => {
       const exists = db.channels.find(c => c.chatId === group.id);
       if (!exists) {
         db.channels.push({
@@ -240,7 +249,7 @@ app.post('/api/whatsapp/sync-groups', async (req, res) => {
     }
 
     logSystem(`${count} novos grupos do WhatsApp sincronizados com sucesso.`, 'success');
-    res.json({ success: true, count, total: groups.length });
+    res.json({ success: true, count, total: cachedGroups.length });
   } catch (err) {
     logSystem(`Erro ao sincronizar grupos: ${err.message}`, 'error');
     res.status(500).json({ message: err.message });
