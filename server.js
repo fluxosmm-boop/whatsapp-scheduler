@@ -91,8 +91,6 @@ function initWhatsApp(auto = false) {
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-gpu',
-        '--no-zygote',
-        '--single-process',
         '--disable-extensions',
         '--disable-default-apps',
         '--js-flags="--max-old-space-size=256"', // Limits Chrome JS memory to 256MB to fit free tier container
