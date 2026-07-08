@@ -75,6 +75,26 @@ function initWhatsApp(auto = false) {
   logSystem('Inicializando WhatsApp Web (Puppeteer)...', 'info');
   waStatus = 'connecting';
 
+  // Remove Chrome lock files left over from previous container restarts
+  const profileDir = path.join(__dirname, 'data', '.wwebjs_auth');
+  const lockFiles = ['SingletonLock', 'SingletonSocket', 'SingletonCookie'];
+  lockFiles.forEach(lockFile => {
+    const patterns = [
+      path.join(profileDir, lockFile),
+      path.join(profileDir, 'Default', lockFile),
+      path.join(profileDir, 'session', lockFile),
+      path.join(profileDir, 'session', 'Default', lockFile),
+    ];
+    patterns.forEach(lockPath => {
+      try {
+        if (fs.existsSync(lockPath)) {
+          fs.unlinkSync(lockPath);
+          logSystem(`Arquivo de trava removido: ${lockPath}`, 'info');
+        }
+      } catch (e) { /* ignore */ }
+    });
+  });
+
   client = new Client({
     authStrategy: new LocalAuth({
       dataPath: path.join(__dirname, 'data', '.wwebjs_auth')
