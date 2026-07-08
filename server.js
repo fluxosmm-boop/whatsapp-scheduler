@@ -287,6 +287,37 @@ app.post('/api/whatsapp/reset-session', async (req, res) => {
   res.json({ success: true, message: 'Sessão resetada. Aguarde o novo QR Code.' });
 });
 
+// Debug endpoint to discover what WhatsApp Web Store objects are available
+app.get('/api/whatsapp/debug-store', async (req, res) => {
+  if (!client || waStatus !== 'connected') {
+    return res.status(400).json({ message: 'WhatsApp não conectado.' });
+  }
+  try {
+    const debug = await client.pupPage.evaluate(() => {
+      const info = {};
+      try { info.hasStore = !!window.Store; } catch(e) {}
+      try { info.storeKeys = window.Store ? Object.keys(window.Store).slice(0, 30) : []; } catch(e) {}
+      try { info.hasChatStore = !!(window.Store && window.Store.Chat); } catch(e) {}
+      try { info.chatModelsCount = (window.Store && window.Store.Chat && window.Store.Chat.models) ? window.Store.Chat.models.length : -1; } catch(e) {}
+      try { info.hasWPP = !!window.WPP; } catch(e) {}
+      try { info.WPPKeys = window.WPP ? Object.keys(window.WPP).slice(0, 20) : []; } catch(e) {}
+      try { info.hasWWebJS = !!window.WWebJS; } catch(e) {}
+      try { info.WWebJSKeys = window.WWebJS ? Object.keys(window.WWebJS).slice(0, 20) : []; } catch(e) {}
+      try {
+        // Try WPP chat list
+        if (window.WPP && window.WPP.chat && window.WPP.chat.list) {
+          const list = window.WPP.chat.list({ onlyGroups: true });
+          info.WPPGroupCount = list ? list.length : 0;
+        }
+      } catch(e) { info.WPPChatError = e.message; }
+      return info;
+    });
+    res.json(debug);
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Sincronizar grupos do WhatsApp e salvar nos canais
 app.post('/api/whatsapp/sync-groups', async (req, res) => {
   if (waStatus !== 'connected' || !client) {
