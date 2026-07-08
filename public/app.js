@@ -311,7 +311,7 @@ async function syncWhatsAppGroups() {
       alert('Erro ao sincronizar: ' + (data.message || 'Erro desconhecido no servidor.'));
       return;
     }
-    alert(`${data.count} grupos do WhatsApp carregados e sincronizados!`);
+    alert(`✅ Sincronização concluída!\n\n📋 Total de grupos encontrados: ${data.total}\n➕ Novos grupos adicionados: ${data.count}`);
     loadChannels();
   } catch (err) {
     console.error('Erro ao sincronizar grupos:', err);

@@ -193,18 +193,31 @@ app.post('/api/whatsapp/sync-groups', async (req, res) => {
   }
 
   try {
-    logSystem('Buscando grupos do WhatsApp com otimização de memória...', 'info');
-    
-    // Custom lightweight evaluation to get only group JID and name directly from WhatsApp Web memory store
-    const groups = await client.pupPage.evaluate(() => {
-      if (!window.Store || !window.Store.Chat) return [];
+    logSystem('Buscando grupos do WhatsApp...', 'info');
+
+    // Wait for WhatsApp Web to fully load chats into memory, then extract groups
+    const groups = await client.pupPage.evaluate(async () => {
+      // Wait up to 20s for Store.Chat to be populated
+      let attempts = 0;
+      while (attempts < 40) {
+        if (window.Store && window.Store.Chat && window.Store.Chat.models && window.Store.Chat.models.length > 0) {
+          break;
+        }
+        await new Promise(r => setTimeout(r, 500));
+        attempts++;
+      }
+
+      if (!window.Store || !window.Store.Chat || !window.Store.Chat.models) return [];
+
       return window.Store.Chat.models
         .filter(chat => chat.isGroup)
         .map(chat => ({
           id: chat.id._serialized,
-          name: chat.name || 'Grupo Sem Nome'
+          name: chat.name || chat.formattedTitle || 'Grupo Sem Nome'
         }));
     });
+
+    logSystem(`${groups.length} grupos encontrados no WhatsApp.`, 'info');
 
     const db = readDB();
     let count = 0;
@@ -227,7 +240,7 @@ app.post('/api/whatsapp/sync-groups', async (req, res) => {
     }
 
     logSystem(`${count} novos grupos do WhatsApp sincronizados com sucesso.`, 'success');
-    res.json({ success: true, count });
+    res.json({ success: true, count, total: groups.length });
   } catch (err) {
     logSystem(`Erro ao sincronizar grupos: ${err.message}`, 'error');
     res.status(500).json({ message: err.message });
