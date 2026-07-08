@@ -131,19 +131,41 @@ function initWhatsApp(auto = false) {
     latestQR = null;
     logSystem('Conexão com o WhatsApp estabelecida com sucesso!', 'success');
     
-    // Proactively load and cache groups in background (non-blocking)
-    setTimeout(async () => {
+    // Proactively cache groups using lightweight synchronous browser evaluation (non-blocking)
+    const tryLoadGroups = async (attempt = 1) => {
       try {
-        logSystem('Carregando grupos do WhatsApp em cache...', 'info');
-        const chats = await client.getChats();
-        cachedGroups = chats
-          .filter(chat => chat.isGroup)
-          .map(chat => ({ id: chat.id._serialized, name: chat.name || 'Grupo Sem Nome' }));
-        logSystem(`${cachedGroups.length} grupos carregados no cache com sucesso!`, 'success');
+        logSystem(`Carregando grupos no cache (tentativa ${attempt})...`, 'info');
+        const result = await client.pupPage.evaluate(() => {
+          try {
+            if (!window.Store || !window.Store.Chat) return null;
+            // Use g.us server identifier to reliably detect groups without loading message history
+            const models = window.Store.Chat.getModelsArray
+              ? window.Store.Chat.getModelsArray()
+              : window.Store.Chat.models;
+            if (!models || models.length === 0) return null;
+            return models
+              .filter(m => m.id && m.id.server === 'g.us')
+              .map(m => ({ id: m.id._serialized, name: m.name || m.formattedTitle || 'Grupo Sem Nome' }));
+          } catch(e) {
+            return null;
+          }
+        });
+
+        if (result && result.length > 0) {
+          cachedGroups = result;
+          logSystem(`${cachedGroups.length} grupos carregados no cache com sucesso!`, 'success');
+        } else if (attempt < 6) {
+          // Retry up to 6 times with 10s delay (WhatsApp may still be loading)
+          setTimeout(() => tryLoadGroups(attempt + 1), 10000);
+        } else {
+          logSystem('Aviso: nenhum grupo encontrado após 6 tentativas.', 'warning');
+        }
       } catch (err) {
-        logSystem(`Aviso: não foi possível pré-carregar grupos: ${err.message}`, 'warning');
+        logSystem(`Aviso: erro ao pré-carregar grupos: ${err.message}`, 'warning');
+        if (attempt < 3) setTimeout(() => tryLoadGroups(attempt + 1), 10000);
       }
-    }, 5000); // Wait 5s after connect for WhatsApp to fully load
+    };
+    setTimeout(() => tryLoadGroups(), 8000); // Wait 8s for WhatsApp to fully load
   });
 
   client.on('authenticated', () => {
@@ -272,18 +294,30 @@ app.post('/api/whatsapp/sync-groups', async (req, res) => {
   }
 
   try {
-    // If cache is empty, try to load now (blocking, with 60s timeout)
+    // If cache is empty, do a synchronous lightweight browser evaluation
     if (cachedGroups.length === 0) {
-      logSystem('Cache vazio. Buscando grupos agora (pode levar até 60s)...', 'info');
+      logSystem('Cache vazio. Fazendo busca rápida de grupos...', 'info');
       try {
-        const chats = await Promise.race([
-          client.getChats(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout de 60s ao buscar grupos')), 60000))
-        ]);
-        cachedGroups = chats
-          .filter(chat => chat.isGroup)
-          .map(chat => ({ id: chat.id._serialized, name: chat.name || 'Grupo Sem Nome' }));
-        logSystem(`${cachedGroups.length} grupos carregados no cache.`, 'info');
+        const result = await client.pupPage.evaluate(() => {
+          try {
+            if (!window.Store || !window.Store.Chat) return null;
+            const models = window.Store.Chat.getModelsArray
+              ? window.Store.Chat.getModelsArray()
+              : window.Store.Chat.models;
+            if (!models || models.length === 0) return null;
+            return models
+              .filter(m => m.id && m.id.server === 'g.us')
+              .map(m => ({ id: m.id._serialized, name: m.name || m.formattedTitle || 'Grupo Sem Nome' }));
+          } catch(e) { return null; }
+        });
+
+        if (result && result.length > 0) {
+          cachedGroups = result;
+          logSystem(`${cachedGroups.length} grupos encontrados.`, 'info');
+        } else {
+          logSystem('WhatsApp ainda carregando os dados. Aguarde 30s e tente novamente.', 'warning');
+          return res.status(503).json({ message: 'WhatsApp ainda está carregando seus grupos. Aguarde 30 segundos e clique em Sincronizar novamente.' });
+        }
       } catch (fetchErr) {
         logSystem(`Erro ao buscar grupos: ${fetchErr.message}`, 'error');
         return res.status(500).json({ message: fetchErr.message });
