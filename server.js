@@ -169,6 +169,26 @@ function initWhatsApp(auto = false) {
     client = null;
     latestQR = null;
     logSystem(`Erro ao inicializar WhatsApp: ${err.message}`, 'error');
+
+    // Auto-recover from corrupted/locked profile
+    const isProfileError = err.message && (
+      err.message.includes('profile appears to be in use') ||
+      err.message.includes('Failed to launch') ||
+      err.message.includes('SingletonLock') ||
+      err.message.includes('user data directory is already in use')
+    );
+
+    if (isProfileError) {
+      logSystem('Sessão corrompida detectada. Limpando e reiniciando...', 'warning');
+      const authPath = path.join(__dirname, 'data', '.wwebjs_auth');
+      try {
+        fs.rmSync(authPath, { recursive: true, force: true });
+        logSystem('Sessão apagada. Reiniciando conexão para gerar novo QR Code...', 'info');
+      } catch (rmErr) {
+        logSystem(`Erro ao limpar sessão: ${rmErr.message}`, 'error');
+      }
+      setTimeout(() => initWhatsApp(), 3000);
+    }
   });
 }
 
@@ -219,6 +239,30 @@ app.post('/api/whatsapp/disconnect', async (req, res) => {
   } else {
     res.json({ success: false, message: 'WhatsApp não inicializado.' });
   }
+});
+
+app.post('/api/whatsapp/reset-session', async (req, res) => {
+  // Force-close existing client
+  if (client) {
+    try { await client.destroy(); } catch (e) { /* ignore */ }
+    client = null;
+  }
+  waStatus = 'disconnected';
+  latestQR = null;
+  cachedGroups = [];
+
+  // Delete saved auth folder
+  const authPath = path.join(__dirname, 'data', '.wwebjs_auth');
+  try {
+    fs.rmSync(authPath, { recursive: true, force: true });
+    logSystem('Sessão apagada pelo usuário. Gerando novo QR Code...', 'info');
+  } catch (e) {
+    logSystem(`Erro ao apagar sessão: ${e.message}`, 'error');
+  }
+
+  // Start fresh
+  setTimeout(() => initWhatsApp(), 1000);
+  res.json({ success: true, message: 'Sessão resetada. Aguarde o novo QR Code.' });
 });
 
 // Sincronizar grupos do WhatsApp e salvar nos canais
